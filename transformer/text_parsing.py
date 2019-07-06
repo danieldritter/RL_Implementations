@@ -28,6 +28,9 @@ class Parser:
         lang2_token_sentence = word_tokenize(self.lang2.readline())
         return [lang1_token_sentence,lang2_token_sentence]
 
+    def byte_pair_encode(self):
+        pass
+        
     def generate_batch(self,batch_size):
         """
         Creates a batch of tokenized sentence pairs of size batch size
@@ -37,7 +40,7 @@ class Parser:
             [[sentence_pair1],[sentence_pair2],...]
         """
         pass
-        
+
     def close_parser(self):
         """
         Closes both text files when parser is no longer needed

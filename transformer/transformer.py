@@ -27,10 +27,14 @@ class Transformer(nn.Module):
         def forward(self):
             pass
 
-        def calc_self_attention(self,Q,K,V):
+        def self_attention_layer(self,Q,K,V):
             """
             Calculates Multi-Head Self-Attention
             """
+            pass
+
+        def feed_forward_layer(self,input):
+            pass
 
     class Decoder(nn.Module):
 
