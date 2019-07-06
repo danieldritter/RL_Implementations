@@ -27,6 +27,11 @@ class Transformer(nn.Module):
         def forward(self):
             pass
 
+        def calc_self_attention(self,Q,K,V):
+            """
+            Calculates Multi-Head Self-Attention
+            """
+
     class Decoder(nn.Module):
 
         def __init__(self):
@@ -35,6 +40,8 @@ class Transformer(nn.Module):
         def forward(self):
             pass
 
+        def calc_masked_self_attention(self,Q,K,V):
+            pass
 
 def __main__():
     pass
