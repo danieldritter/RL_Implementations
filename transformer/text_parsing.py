@@ -1,5 +1,5 @@
 from nltk import word_tokenize
-
+import collections
 
 
 class Parser:
@@ -10,7 +10,7 @@ class Parser:
     """
 
 
-    def __init__(self,lang1_file,lang2_file):
+    def __init__(self,lang1_file,lang2_file,vocab_dict):
         self.lang1 = open(lang1_file)
         self.lang2 = open(lang2_file)
 
@@ -30,7 +30,7 @@ class Parser:
 
     def byte_pair_encode(self):
         pass
-        
+
     def generate_batch(self,batch_size):
         """
         Creates a batch of tokenized sentence pairs of size batch size
@@ -51,3 +51,34 @@ class Parser:
         """
         self.lang1.close()
         self.lang2.close()
+
+class Vocabulary_Encoder:
+    """
+    This is a class to perform data preprocessing on the text data, such as
+    learning the joint byte-pair encoding between the target and source
+    languages
+    """
+
+    def __init__(self,lang1_file,lang2_file,total_vocab_size):
+        self.lang1_file = open(lang1_file)
+        self.lang2_file = open(lang2_file)
+        self.total_vocab_size = total_vocab_size
+
+    def get_digram_freqs(self):
+        """
+        Generates a dictionary mapping from a symbol pair
+        to its frequency in the training data
+        """
+        pairs = collections.defaultdict()
+        
+
+    def get_vocab_freqs(self):
+        vocab = collections.defaultdict(int)
+        for sentence in self.lang1_file.readlines:
+            for word in word_tokenize(sentence):
+                vocab[word] += 1
+
+        for sentence in self.lang2_file.readlines():
+            for word in word_tokenize(sentence):
+                vocab[word] += 1
+        return vocab
