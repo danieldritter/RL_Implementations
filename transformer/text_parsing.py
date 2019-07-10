@@ -13,6 +13,7 @@ class Parser:
     def __init__(self,lang1_file,lang2_file,vocab_dict):
         self.lang1 = open(lang1_file)
         self.lang2 = open(lang2_file)
+        self.encoding_map = byte_pair_encoding()
 
 
     def generate_sentence_pair(self):
@@ -28,7 +29,7 @@ class Parser:
         lang2_token_sentence = word_tokenize(self.lang2.readline())
         return [lang1_token_sentence,lang2_token_sentence]
 
-    def byte_pair_encode(self):
+    def byte_pair_encoding(self):
         pass
 
     def generate_batch(self,batch_size):
@@ -70,7 +71,7 @@ class Vocabulary_Encoder:
         to its frequency in the training data
         """
         pairs = collections.defaultdict()
-        
+
 
     def get_vocab_freqs(self):
         vocab = collections.defaultdict(int)
