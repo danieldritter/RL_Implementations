@@ -2,12 +2,13 @@
 Functions for processing images to feed in Medical Image Generative Adversarial
 Networks
 """
-import torch.utils as utils
+import torch.utils.data as data
 import os
 import skimage.io as io
+from PIL import Image
 
 
-class NucleiDataset(utils.data.Dataset):
+class NucleiDataset(data.Dataset):
     """
     Dataset for MoNuSeg Nuclear Segmentation Dataset
     """
@@ -18,14 +19,14 @@ class NucleiDataset(utils.data.Dataset):
         self.index_map = dict([(i, os.path.splitext(file)[0]) for i, file in enumerate(os.listdir(image_dir))])
 
     def __len__(self):
-        return len(os.listdir(self.data_dir))
+        return len(os.listdir(self.image_dir))
 
     def __getitem__(self, index):
         file_name = self.index_map[index]
-        image = io.imread(self.image_dir + "/" + file_name + ".tif")
-        label = io.imread(self.label_dir + "/" + file_name + ".png")
-
+        image = Image.open(self.image_dir + "/" + file_name + ".tif")
+        label = Image.open(self.label_dir + "/" + file_name + ".png")
         sample = {'image': image, 'label': label}
-
         if self.transform:
-            sample = self.transform(sample)
+            sample['image'] = self.transform(sample['image'])
+            sample['label'] = self.transform(sample['label'])
+        return sample
