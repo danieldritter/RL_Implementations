@@ -29,10 +29,11 @@ class Parser:
         lang2_token_sentence = word_tokenize(self.lang2.readline())
         return [lang1_token_sentence,lang2_token_sentence]
 
-    def byte_pair_encoding(self):
-        pass
 
-    def generate_batch(self,batch_size):
+
+
+
+    def generate_batch(self, batch_size):
         """
         Creates a batch of tokenized sentence pairs of size batch size
         ::Params::
@@ -65,21 +66,41 @@ class Vocabulary_Encoder:
         self.lang2_file = open(lang2_file)
         self.total_vocab_size = total_vocab_size
 
-    def get_digram_freqs(self):
+    def __get_vocabulary(self):
         """
-        Generates a dictionary mapping from a symbol pair
-        to its frequency in the training data
+        Creates a dictionary mapping words in training text to their frequencies
+        ::Params::
+            None
+        ::Outputs::
+            dict(word,frequency)
         """
-        pairs = collections.defaultdict()
-
-
-    def get_vocab_freqs(self):
         vocab = collections.defaultdict(int)
-        for sentence in self.lang1_file.readlines:
-            for word in word_tokenize(sentence):
-                vocab[word] += 1
-
-        for sentence in self.lang2_file.readlines():
-            for word in word_tokenize(sentence):
-                vocab[word] += 1
+        for sentence in self.lang1.readlines():
+            tokens = word_tokenize(sentence)
+            for token in tokens:
+                vocab[token] += 1
+        for sentence in self.lang2.readlines():
+            tokens = word_tokenize(sentence):
+            for token in tokens:
+                vocab[token] += 1
         return vocab
+
+    def byte_pair_encoding(self):
+        """
+        Generates joint byte pair encoding of source and target language
+        """
+        vocab = self._get_vocabulary()
+        vocab = dict([(tuple(x[:-1])+(x[-1]+'</w>',) ,y) for (x,y) in vocab.items()])
+        sorted_vocab = sorted(vocab.items(),key=lambda x: x[1], reverse=True)
+
+    def _get_pair_statistics(self,sorted_vocab):
+
+        digram_freq = defaultdict(int)
+        indices = defaultdict(lambda: defaultdict(int))
+        for i, (word, freq) in enumerate(sorted_vocab):
+            curr_char = word[0]
+            for next_char in word[1:]:
+                digram_freq[curr_char, next_char] += 1
+                indices[curr_char, next_char][i] += 1
+                curr_char = next_char
+        return digram_freq, indices
