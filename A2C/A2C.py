@@ -8,6 +8,7 @@ import numpy as np
 import time
 import random
 import argparse
+import multiprocessing
 
 class A2C(nn.Module):
     """
@@ -88,6 +89,10 @@ def discount_rewards(rewards, gamma):
         prev = discounted_rewards[-i]
     return discounted_rewards
 
+
+def generate_n_step_trajectory(n, env):
+
+
 def __main__():
 
     # Parses command line arguments
@@ -98,6 +103,7 @@ def __main__():
     parser.add_argument('--learning_rate', type=float, help="Learning rate to use in updating network parameters", default=.001)
     parser.add_argument('--num_episodes', type=int, help="Number of episodes to run the agent", default=5000)
     parser.add_argument('--plot', help="Plots average reward every 100 timesteps after training agent", action="store_true")
+    parser.add_argument('--num_workers', type=int, help="Number of child processes to spawn to increase speed of learning", default=1)
     args = parser.parse_args()
 
     env = gym.make("CartPole-v1")
