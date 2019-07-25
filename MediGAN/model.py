@@ -10,6 +10,7 @@ from torchvision import transforms
 import torch.optim as optim
 import torch
 from PIL import Image
+import argparse
 
 class Generator(nn.Module):
 
@@ -39,7 +40,7 @@ class Generator(nn.Module):
         out = self.up1_bn(out)
         out = F.relu(self.up2(out))
         out = self.up2_bn(out)
-        out = self.up3(out)
+        out = F.tanh(self.up3(out))
         return out
 
 class Discriminator(nn.Module):
@@ -52,19 +53,29 @@ class Discriminator(nn.Module):
         self.conv2_bn = nn.InstanceNorm2d(30)
         self.conv3 = nn.Conv2d(30, 20, 5)
         self.conv3_bn = nn.InstanceNorm2d(20)
-        self.fc1 = nn.Linear(5000000,2)
+        self.fc1 = nn.Linear(5000000, 2)
 
     def forward(self, input_tensor):
-        out = F.relu(self.conv1(input_tensor))
+        out = F.leaky_relu(self.conv1(input_tensor))
         out = self.conv1_bn(out)
-        out = F.relu(self.conv2(out))
+        out = F.leaky_relu(self.conv2(out))
         out = self.conv2_bn(out)
-        out = F.relu(self.conv3(out))
+        out = F.leaky_relu(self.conv3(out))
         out = self.conv3_bn(out)
         out = F.softmax(self.fc1(out.view(-1)), dim=0)
         return out
 
+def set_grad(model, state):
+    for param in model.parameters():
+        param.requires_grad = state
+
 def train():
+
+    # Command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--learning_rate", type=float, help="Learning rate to use for training", default=.0001)
+    parser.add_argument("--show_images", help="shows generated image every 5 steps", action="store_true")
+    args = parser.parse_args()
 
     # Defaults to using gpu if available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -75,7 +86,7 @@ def train():
     # Creates datast and dataloader
     transform = transforms.Compose([transforms.Resize((512, 512)), transforms.ToTensor()])
     dataset = image_processing.NucleiDataset("../data/Tissue-images", "../data/full_masks", transform)
-    nuclei_dataloader = utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+    nuclei_dataloader = utils.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
     # Creates generators and discriminators
     image_gen = Generator(1, 3)
@@ -90,7 +101,8 @@ def train():
     mask_disc.to(device)
 
     cyclic_loss = nn.L1Loss()
-    optimizer = optim.Adam(list(image_gen.parameters()) + list(mask_gen.parameters()) + list(image_disc.parameters()) + list(mask_disc.parameters()), lr=.00001)
+    gen_optimizer = optim.Adam(list(image_gen.parameters()) + list(mask_gen.parameters()), lr=args.learning_rate)
+    dis_optimizer = optim.Adam(list(image_disc.parameters()) + list(mask_disc.parameters()), lr=args.learning_rate)
 
     for epoch in range(num_epochs):
         for i, batch in enumerate(nuclei_dataloader):
@@ -106,21 +118,40 @@ def train():
             f_mask_discrim_prob = mask_disc(predicted_mask)
             recov_image = image_gen(predicted_mask)
             recov_mask = mask_gen(predicted_image)
-            print(f_im_discrim_prob)
-            print(f_mask_discrim_prob)
             print(im_discrim_prob)
             print(mask_discrim_prob)
-            # Build up losses
-            im_to_mask_loss = torch.mean(torch.log(1-f_im_discrim_prob[0]) + torch.log(im_discrim_prob[0]))
-            mask_to_im_loss = torch.mean(torch.log(1-f_mask_discrim_prob[0]) + torch.log(mask_discrim_prob[0]))
+            print(f_im_discrim_prob)
+            print(f_mask_discrim_prob)
+            # Disable discriminator gradients for generator update
+            set_grad(image_disc, False)
+            set_grad(mask_disc, False)
+            # Get generator losses
+            gen_optimizer.zero_grad()
+            im_to_mask_gen_loss = torch.mean((1-f_im_discrim_prob[0])**2 + (im_discrim_prob[0])**2)
+            mask_to_im_gen_loss = torch.mean((1-f_mask_discrim_prob[0])**2 + mask_discrim_prob[0]**2)
+            # Get cyclic losses
             cyclic_loss_im_to_mask = cyclic_loss(recov_image, image)
             cyclic_loss_mask_to_im = cyclic_loss(recov_mask, mask)
-            loss = im_to_mask_loss + mask_to_im_loss + 10*(cyclic_loss_im_to_mask + cyclic_loss_mask_to_im)
-            print(loss.item())
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            if i % 5 == 0:
+            # Total up gen losses and optimize
+            gen_loss = im_to_mask_gen_loss + mask_to_im_gen_loss + cyclic_loss_im_to_mask + cyclic_loss_mask_to_im
+            gen_loss.backward(retain_graph=True)
+            gen_optimizer.step()
+
+            # Turn gradients back on for disciminators
+            set_grad(image_disc, True)
+            set_grad(mask_disc, True)
+
+            # Get discriminator losses
+            dis_optimizer.zero_grad()
+            im_discrim_loss = torch.mean((1-im_discrim_prob[0])**2 + (f_im_discrim_prob[0])**2)
+            mask_discrim_loss = torch.mean((1-mask_discrim_prob[0])**2 + (f_mask_discrim_prob[0])**2)
+            discrim_loss = im_discrim_loss + mask_discrim_loss
+            discrim_loss.backward()
+            dis_optimizer.step()
+            print(gen_loss)
+            print(discrim_loss)
+
+            if i % 5 == 0 and args.show_images:
                 image = transforms.ToPILImage()(torch.squeeze(predicted_image.cpu().detach()))
                 image.show()
 

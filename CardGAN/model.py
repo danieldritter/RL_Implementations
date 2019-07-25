@@ -72,6 +72,8 @@ def __main__():
     fake_batch = generator(input_noise)
     real_batch = sample_generator.get_sample()
 
+    batch = 
+
 
 if __name__ == "__main__":
     __main__()

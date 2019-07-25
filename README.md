@@ -11,3 +11,8 @@ Transformers:
 
 MuseNet:
   Original Blog Post: https://openai.com/blog/musenet/
+
+CycleGAN:
+  Good Tutorial in Tensorflow: https://hardikbansal.github.io/CycleGANBlog/
+  Original Paper: https://arxiv.org/pdf/1703.10593.pdf
+  

@@ -6,6 +6,7 @@ import torch.utils.data as data
 import os
 import skimage.io as io
 from PIL import Image
+import numpy as np
 
 
 class NucleiDataset(data.Dataset):
@@ -30,3 +31,29 @@ class NucleiDataset(data.Dataset):
             sample['image'] = self.transform(sample['image'])
             sample['label'] = self.transform(sample['label'])
         return sample
+
+class HistoryBuffer():
+    """
+    This is a class to store previously generated fake images and then
+    sample from the pool once it is full.
+    """
+
+    def __init__(self, buffer_size):
+        self.buffer_size = buffer_size
+        self.buffer = []
+
+    def insert_image(self, image):
+        # Remove last element if buffer is full, otherwise just add the image
+        if len(self.buffer) > self.buffer_size:
+            self.buffer.insert(0,image)
+            self.buffer.pop()
+        else:
+            self.buffer.insert(0, image)
+
+    def get_image_samples(self, sample_size):
+        if sample_size > self.buffer_size:
+            print("Error: Cannot sample a batch greater than size of buffer")
+            return None
+        else:
+            return np.random.choice(self.buffer, sample_size)
+    
