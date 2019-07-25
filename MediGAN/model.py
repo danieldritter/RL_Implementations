@@ -17,15 +17,15 @@ class Generator(nn.Module):
     def __init__(self, in_c, out_c):
         super(Generator, self).__init__()
         self.conv1 = nn.Conv2d(in_c, 40, 5)
-        self.conv1_bn = nn.InstanceNorm2d(40)
+        self.conv1_bn = nn.BatchNorm2d(40)
         self.conv2 = nn.Conv2d(40, 30, 5)
-        self.conv2_bn = nn.InstanceNorm2d(30)
+        self.conv2_bn = nn.BatchNorm2d(30)
         self.conv3 = nn.Conv2d(30, 20, 4)
-        self.conv3_bn = nn.InstanceNorm2d(20)
+        self.conv3_bn = nn.BatchNorm2d(20)
         self.up1 = nn.ConvTranspose2d(20, 30, 5)
-        self.up1_bn = nn.InstanceNorm2d(30)
+        self.up1_bn = nn.BatchNorm2d(30)
         self.up2 = nn.ConvTranspose2d(30, 40, 5)
-        self.up2_bn = nn.InstanceNorm2d(40)
+        self.up2_bn = nn.BatchNorm2d(40)
         self.up3 = nn.ConvTranspose2d(40, out_c, 4)
 
 
@@ -48,12 +48,12 @@ class Discriminator(nn.Module):
     def __init__(self, in_c):
         super(Discriminator, self).__init__()
         self.conv1 = nn.Conv2d(in_c, 40, 5)
-        self.conv1_bn = nn.InstanceNorm2d(40)
+        self.conv1_bn = nn.BatchNorm2d(40)
         self.conv2 = nn.Conv2d(40, 30, 5)
-        self.conv2_bn = nn.InstanceNorm2d(30)
+        self.conv2_bn = nn.BatchNorm2d(30)
         self.conv3 = nn.Conv2d(30, 20, 5)
-        self.conv3_bn = nn.InstanceNorm2d(20)
-        self.fc1 = nn.Linear(5000000, 2)
+        self.conv3_bn = nn.BatchNorm2d(20)
+        self.fc1 = nn.Linear(1190720, 2)
 
     def forward(self, input_tensor):
         out = F.leaky_relu(self.conv1(input_tensor))
@@ -84,9 +84,9 @@ def train():
     # TODO: Add in more transforms for data augmentation
 
     # Creates datast and dataloader
-    transform = transforms.Compose([transforms.Resize((512, 512)), transforms.ToTensor()])
+    transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
     dataset = image_processing.NucleiDataset("../data/Tissue-images", "../data/full_masks", transform)
-    nuclei_dataloader = utils.data.DataLoader(dataset, batch_size=5, shuffle=True)
+    nuclei_dataloader = utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
     # Creates generators and discriminators
     image_gen = Generator(1, 3)
@@ -151,9 +151,10 @@ def train():
             print(gen_loss)
             print(discrim_loss)
 
-            if i % 5 == 0 and args.show_images:
-                image = transforms.ToPILImage()(torch.squeeze(predicted_image.cpu().detach()))
-                image.show()
+        if epoch % 5 == 0 and args.show_images:
+            print(predicted_image.shape)
+            image = transforms.ToPILImage()(torch.squeeze(predicted_image.cpu().detach()))
+            image.show()
 
 if __name__ == "__main__":
     train()
