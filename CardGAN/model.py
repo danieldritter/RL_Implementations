@@ -72,7 +72,7 @@ def __main__():
     fake_batch = generator(input_noise)
     real_batch = sample_generator.get_sample()
 
-    batch = 
+    batch =
 
 
 if __name__ == "__main__":

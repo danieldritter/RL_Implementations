@@ -4,6 +4,7 @@ before feeding in to network.
 """
 import keras
 import json
+import requests
 
 class CardGenerator():
 
