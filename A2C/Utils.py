@@ -1,8 +1,9 @@
-
+import torch
+import numpy as np
 
 class MultiEnv():
     """
-    Class to run multiple environments in parallel and return all of their information
+    Class to run multiple environments in parallel and return all of their information. Currently not implemented
     """
     def __init__(self, num_envs):
         self.envs = [gym.make("CartPole-v1") for i in range(num_envs)]
@@ -14,13 +15,12 @@ class MultiEnv():
         to train the A2C agent. A value of 0 will generate complete episodes(Monte Carlo)
         while 1 is equivalent to TD updates
         """
-
+        pass
+        
     def _get_observation(self, env, n):
         states = []
         actions = []
         rewards = []
-        for i in range(n):
-
 
 
 def generate_trajectory(env, network, render):

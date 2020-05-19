@@ -75,7 +75,7 @@ class MemoryBuffer:
             q_values = self.act_net(torch.from_numpy(s_1).float())
             # Remove bootstrapping term if final step(since reward after final step shold be 0)
             if term:
-                loss_val = self.loss(r,q_values[a])
+                loss_val = self.loss(torch.tensor(r),q_values[a])
             else:
                 # Take max over target network output to approximate V(s')
                 loss_val = self.loss(r+self.gamma*(torch.max(self.target_net(torch.from_numpy(s_2).float()))),q_values[a])
@@ -142,7 +142,7 @@ def __main__():
     parser.add_argument('--buffer_size', type=int, help="Size of experience replay buffer", default=1000)
     parser.add_argument('--gamma', type=float, help="gamma value to use in reward discounting, float in [0,1)", default=.99)
     parser.add_argument('--epsilon', type=float, help="Epsilon value to use in determining random vs. greedy actions", default=1.0)
-    parser.add_argument('--epsilon_decay', type=float, help="Value to decay epsilon by after each episode(epsilon *= epsilon_decay). In range [0,1)", default=.995)
+    parser.add_argument('--epsilon_decay', type=float, help="Value to decay epsilon by after each episode(epsilon *= epsilon_decay). In range [0,1)", default=.9995)
     parser.add_argument('--learning_rate', type=float, help="Learning rate to use in updating network parameters", default=.001)
     parser.add_argument('--target_network_lag', type=int, help="Number of episodes to wait before updating target network parameters", default=20)
     parser.add_argument('--batch_size', type=int, help="Size of batches to sample from experience replay buffer(Ignored for monte carlo updating)", default=10)
@@ -155,13 +155,8 @@ def __main__():
         print("Update Type must be one of ['TD','Monte_Carlo']")
 
     # Stores some of the arguments in local variables
-    update_type = args.update_type
-    render = args.render
     epsilon = args.epsilon
-    epsilon_decay = args.epsilon_decay
-    num_episodes = args.num_episodes
-    plot = args.plot
-    env = gym.make("CartPole-v0")
+    env = gym.make("CartPole-v1")
 
     # Output size of two for left or right action
     act_net = DQN(env.action_space.n)
@@ -178,16 +173,16 @@ def __main__():
     target_counter = 0
     # Stores total reward at end of every episode
     rewards = []
-    for i in range(num_episodes):
+    for i in range(args.num_episodes):
         target_counter += 1
         obs = env.reset()
         episode = []
         # Decays epsilon to reduce randomness over time
-        epsilon *= epsilon_decay
+        epsilon *= args.epsilon_decay
         done = False
         sum_rewards = 0
         for j in range(1000):
-            if render:
+            if args.render:
                 env.render()
             with torch.no_grad():
                 action = torch.argmax(act_net(torch.from_numpy(obs).float())).numpy()
@@ -198,16 +193,16 @@ def __main__():
             sum_rewards += reward
             episode.append((prev,action,reward,obs,done))
 
-            if update_type == "TD":
+            if args.update_type == "TD":
                 memory_buffer.insert_episode(prev,action,reward,obs,done)
 
             if done:
                 print("Episode {} finished after {} timesteps".format(i,j+1))
                 print(sum_rewards)
                 # Stores reward to graph if plotting is turned on
-                if plot:
+                if args.plot:
                     rewards.append(sum_rewards)
-                if update_type == "Monte_Carlo":
+                if args.update_type == "Monte_Carlo":
                     memory_buffer.monte_carlo_update(episode,sum_rewards)
                 else:
                     memory_buffer.experience_replay()
@@ -219,7 +214,7 @@ def __main__():
     env.close()
 
     # Plots average rewards
-    if plot:
+    if args.plot:
         avg_rewards = []
         for i in range(0,len(rewards),100):
             avg_rewards.append(np.mean(rewards[i:i+100]))

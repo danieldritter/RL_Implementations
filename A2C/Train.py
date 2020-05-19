@@ -8,25 +8,27 @@ import numpy as np
 import time
 import random
 import argparse
+import matplotlib.pyplot as plt
+from Utils import generate_trajectory, discount_rewards
 from A2C import A2C
 
 def __main__():
 
     # Parses command line arguments
-    parser = argparse.ArgumentParser(description="Parses command line arguments for DQN")
+    parser = argparse.ArgumentParser(description="Parses command line arguments for A2C")
     parser.add_argument('--update_type',default="TD", help="Type of update to use, must be either 'TD' or 'Monte_Carlo'")
     parser.add_argument('--render', help="renders game, but slows training significantly", action="store_true")
     parser.add_argument('--gamma', type=float, help="gamma value to use in reward discounting, float in [0,1)", default=.99)
     parser.add_argument('--learning_rate', type=float, help="Learning rate to use in updating network parameters", default=.001)
-    parser.add_argument('--num_episodes', type=int, help="Number of episodes to run the agent", default=5000)
+    parser.add_argument('--num_episodes', type=int, help="Number of episodes to run the agent", default=500)
     parser.add_argument('--plot', help="Plots average reward every 100 timesteps after training agent", action="store_true")
-    parser.add_argument('--num_workers', type=int, help="Number of child processes to spawn to increase speed of learning", default=1)
+
     args = parser.parse_args()
 
     env = gym.make("CartPole-v1")
     network = A2C(len(env.observation_space.high),env.action_space.n)
     optimizer = optim.Adam(network.parameters(),lr=args.learning_rate)
-
+    rewards = []
     for i in range(args.num_episodes):
         if args.update_type == "Monte_Carlo":
             states, actions, rewards, total_reward = generate_trajectory(env, network, args.render)
@@ -37,13 +39,16 @@ def __main__():
                 policy, value = network(torch.from_numpy(state).float())
                 critic_loss_val = (reward - value)**2
                 actor_loss_val = -torch.log(policy[action])*(reward - value.detach())
+                # Critic value weight by .5 for increased stability
                 loss = .5*critic_loss_val + actor_loss_val
                 loss.backward()
             optimizer.step()
+            rewards.append(total_reward)
         elif args.update_type == "TD":
             done = False
             obs = env.reset()
             total_reward = 0.0
+            # Runs one complete episode
             while not done:
                 # Samples action from current policy
                 policy, value = network(torch.from_numpy(obs).float())
@@ -70,6 +75,14 @@ def __main__():
                 optimizer.step()
                 obs = s_prime
             print(total_reward)
+            rewards.append(total_reward)
+    # Plots average rewards
+    if args.plot:
+        avg_rewards = []
+        for i in range(0,len(rewards),100):
+            avg_rewards.append(np.mean(rewards[i:i+100]))
+        plt.plot(avg_rewards)
+        plt.show()
     env.close()
 
 
